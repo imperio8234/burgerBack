@@ -55,6 +55,19 @@ export class PedidosService {
             throw error instanceof HttpException ? error : new HttpException('Error al obtener los pedidos', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async findAllByUser(userId: string): Promise<Pedido[]> {
+        try {
+            return await this.pedidoRepository.find({ where:{usuario:{id: userId}}, relations: {
+                items: {
+                    acompanantes: true,
+                    adiciones: true
+                },
+                usuario: true
+            }});
+        } catch (error) {
+            throw error instanceof HttpException ? error : new HttpException('Error al obtener los pedidos', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     async findOne(id: string): Promise<Pedido> {
         try {

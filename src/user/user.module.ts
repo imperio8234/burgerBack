@@ -6,10 +6,11 @@ import { Usuario } from './userEntity/user.entity';
 import { passwordManager } from 'src/util/passManager';
 import { AuthModule } from 'src/util/auth.module';
 import { EmailService } from 'src/emailServices/email.service';
+import { SupabaseService } from 'src/servicios/storageFile';
 
 @Module({
   imports:[TypeOrmModule.forFeature([Usuario]), AuthModule],
   controllers: [UserController],
-  providers: [UserService, passwordManager, EmailService]
+  providers: [UserService, passwordManager, EmailService, SupabaseService]
 })
 export class UserModule {}

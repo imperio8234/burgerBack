@@ -20,6 +20,11 @@ export class PedidosController {
     findAll() {
         return this.pedidosService.findAll();
     }
+    @UseGuards(JwtAuthGuard)
+    @Get("user/:id")
+    findAllByUser(@Param("id") id: string) {
+        return this.pedidosService.findAllByUser(id);
+    }
 
     @UseGuards(JwtAuthGuard)
     @Get(':id')

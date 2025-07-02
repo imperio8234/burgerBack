@@ -6,17 +6,21 @@ import { CreateUsuarioDto } from './dto/dtoUser';
 import { passwordManager } from 'src/util/passManager';
 import { JwtService } from '@nestjs/jwt';
 import { EmailService } from 'src/emailServices/email.service';
+import { SupabaseService } from 'src/servicios/storageFile';
 
 @Injectable()
 export class UserService {
+  private readonly USER_BUCKET = 'documentos';
+
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
     private readonly passManager: passwordManager,
-     private readonly jwtService: JwtService,
-      private readonly emailService: EmailService // <-- nuevo
+    private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
+    private readonly supabaseService: SupabaseService,
   ) { }
-     // Generador simple de código
+
   private generarCodigo(length = 6): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -26,39 +30,55 @@ export class UserService {
     try {
       const existUser = await this.usuarioRepository.findOne({
         where: {
-          correo: createUsuarioDto.correo
-        }
-      })
+          correo: createUsuarioDto.correo,
+        },
+      });
       if (existUser) {
-        return new HttpException("Usuario se encuentra registrado", HttpStatus.FOUND)
+        return new HttpException('Usuario se encuentra registrado', HttpStatus.FOUND);
       }
+
       const contraseñaHash = await this.passManager.encriptPaswoord(createUsuarioDto.contraseña);
       createUsuarioDto.contraseña = contraseñaHash;
-      const usuario = this.usuarioRepository.create(createUsuarioDto);
 
-      // generar codigo
-       const nuevoCodigo = this.generarCodigo();
-    usuario.codigo = nuevoCodigo;
-    await this.usuarioRepository.save(usuario);
+      // Subir foto si es archivo
+      if (createUsuarioDto.foto && createUsuarioDto.foto instanceof Buffer) {
+        const resultado = await this.supabaseService.uploadFile(
+          this.USER_BUCKET,
+          createUsuarioDto.foto,
+          'image/jpeg', // puedes inferir esto si tienes el mimetype
+          `${Date.now()}-${createUsuarioDto.nombre.replace(/\s+/g, '_')}.jpg`
+        );
+        createUsuarioDto.foto = resultado.publicUrl;
+      }
 
-    const html = `
-      <h2>Hola ${usuario.nombre},</h2>
-      <p>Este es tu nuevo código de verificación:</p>
-      <h1 style="background:#f0f0f0;padding:10px;text-align:center">${nuevoCodigo}</h1>
-    `;
+      const usuario = this.usuarioRepository.create({
+        ...createUsuarioDto,
+        foto: createUsuarioDto.foto as string, // fuerza a string
+      });
 
-    await this.emailService.sendEmail(
-      usuario.correo,
-      'Tu nuevo código de verificación',
-      html
-    );
+      const nuevoCodigo = this.generarCodigo();
+      usuario.codigo = nuevoCodigo;
+      await this.usuarioRepository.save(usuario);
+
+      const html = `
+        <h2>Hola ${usuario.nombre},</h2>
+        <p>Este es tu nuevo código de verificación:</p>
+        <h1 style="background:#f0f0f0;padding:10px;text-align:center">${nuevoCodigo}</h1>
+      `;
+
+      await this.emailService.sendEmail(
+        usuario.correo,
+        'Tu nuevo código de verificación',
+        html
+      );
+
       const usuarioGuardado = await this.usuarioRepository.save(usuario);
-      
-      const { ...user } = usuarioGuardado
-      return {user: user, success: true, message: "debes de verificar el codigo"}
+
+      const { ...user } = usuarioGuardado;
+      return { user: user, success: true, message: 'debes de verificar el codigo' };
     } catch (error) {
       if (error instanceof HttpException) {
-        return error
+        return error;
       }
       throw new HttpException('Error al crear el usuario', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -76,8 +96,20 @@ export class UserService {
     return usuario;
   }
 
-  async update(id: string, data: Partial<Usuario>): Promise<Usuario> {
+  async update(id: string, data: Partial<CreateUsuarioDto>): Promise<Usuario> {
     const usuario = await this.findOne(id);
+
+    // Manejar nueva foto si es archivo Buffer
+    if (data.foto && data.foto instanceof Buffer) {
+      const resultado = await this.supabaseService.uploadFile(
+        this.USER_BUCKET,
+        data.foto,
+        'image/jpeg',
+        `${Date.now()}-${usuario.nombre.replace(/\s+/g, '_')}.jpg`
+      );
+      data.foto = resultado.publicUrl;
+    }
+
     Object.assign(usuario, data);
     try {
       return await this.usuarioRepository.save(usuario);
@@ -110,8 +142,6 @@ export class UserService {
       access_token: this.jwtService.sign(payload),
     };
   }
-
-
 
   async verificarCuenta(correo: string, codigo: string) {
     const user = await this.usuarioRepository.findOne({ where: { correo } });

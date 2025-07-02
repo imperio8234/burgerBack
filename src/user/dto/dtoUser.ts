@@ -22,7 +22,7 @@ export class CreateUsuarioDto {
   @ApiPropertyOptional({ example: 'https://example.com/foto.jpg' })
   @IsOptional()
   @IsString()
-  foto: string;
+  foto: string | Buffer;;
 
   @ApiPropertyOptional({ example: '1234567' })
   @IsString()

@@ -1,20 +1,36 @@
-import { Controller, Post, Body, Get, Param, Put, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductosService } from './productos.service';
 import { CreateProductoDto } from './dto/productosDto';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/util/authGuard';
 
 @ApiBearerAuth()
 @Controller('productos')
 export class ProductosController {
-  constructor(private readonly productosService: ProductosService) { }
+  constructor(private readonly productosService: ProductosService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() data: CreateProductoDto) {
-    return this.productosService.create(data);
+  @UseInterceptors(FileInterceptor('foto')) // debe coincidir con el nombre del campo del form-data
+  @ApiConsumes('multipart/form-data')
+  create(
+    @Body() data: CreateProductoDto,
+    @UploadedFile() foto: Express.Multer.File,
+  ) {
+    return this.productosService.create(data, foto); // Se pasa la imagen
   }
-
 
   @Get()
   findAll() {
@@ -27,11 +43,16 @@ export class ProductosController {
     return this.productosService.findOne(id);
   }
 
-
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: Partial<CreateProductoDto>) {
-    return this.productosService.update(id, data);
+  @UseInterceptors(FileInterceptor('foto')) // permite actualizar la imagen
+  @ApiConsumes('multipart/form-data')
+  update(
+    @Param('id') id: string,
+    @Body() data: Partial<CreateProductoDto>,
+    @UploadedFile() foto: Express.Multer.File,
+  ) {
+    return this.productosService.update(id, data, foto); // También se puede actualizar la imagen
   }
 
   @UseGuards(JwtAuthGuard)

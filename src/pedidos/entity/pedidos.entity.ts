@@ -32,8 +32,6 @@ export class Pedido {
     @ManyToOne(() => Usuario, usuario => usuario.pedidos)
     usuario: Usuario;
 
-   
-
     @OneToMany(() => PedidoItem, item => item.pedido, { cascade: true })
     items: PedidoItem[];
 
