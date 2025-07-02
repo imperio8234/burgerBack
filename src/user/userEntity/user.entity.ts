@@ -13,7 +13,7 @@ export class Usuario {
   correo: string;
 
   @Column()
-  contraseña: string;
+  contrasena: string;
 
   @Column({ default: 'cliente' })
   rol: 'admin' | 'cliente';

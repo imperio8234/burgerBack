@@ -41,7 +41,7 @@ export class UserController {
       properties: {
         nombre: { type: 'string', example: 'Juan Perez' },
         correo: { type: 'string', example: 'juan@example.com' },
-        contraseña: { type: 'string', example: '12345678' },
+        contrasena: { type: 'string', example: '12345678' },
         rol: { type: 'string', enum: ['admin', 'cliente'] },
         foto: {
           type: 'string',
@@ -57,6 +57,7 @@ export class UserController {
   if (foto) {
     createUsuarioDto.foto = foto.buffer;
   }
+  console.log("Usuario", createUsuarioDto)
   return this.userService.create(createUsuarioDto);
 }
   @Post('login')
@@ -64,12 +65,12 @@ export class UserController {
     schema: {
       properties: {
         correo: { type: 'string', example: 'juan@example.com' },
-        contraseña: { type: 'string', example: 'contraseñaSegura123' },
+        contrasena: { type: 'string', example: 'contraseñaSegura123' },
       },
     },
   })
-  login(@Body() body: { correo: string; contraseña: string }) {
-    return this.userService.login(body.correo, body.contraseña);
+  login(@Body() body: { correo: string; contrasena: string }) {
+    return this.userService.login(body.correo, body.contrasena);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -94,7 +95,7 @@ export class UserController {
       properties: {
         nombre: { type: 'string' },
         correo: { type: 'string' },
-        contraseña: { type: 'string' },
+        contrasena: { type: 'string' },
         rol: { type: 'string', enum: ['admin', 'cliente'] },
         foto: {
           type: 'string',

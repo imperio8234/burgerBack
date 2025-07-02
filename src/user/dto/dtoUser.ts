@@ -13,7 +13,7 @@ export class CreateUsuarioDto {
 
   @ApiProperty({ example: 'contraseñaSegura123' })
   @IsString()
-  contraseña: string;
+  contrasena: string;
 
   @ApiProperty({ example: 'admin', enum: ['admin', 'cliente'] })
   @IsIn(['admin', 'cliente'])

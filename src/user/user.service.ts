@@ -36,9 +36,8 @@ export class UserService {
       if (existUser) {
         return new HttpException('Usuario se encuentra registrado', HttpStatus.FOUND);
       }
-
-      const contraseñaHash = await this.passManager.encriptPaswoord(createUsuarioDto.contraseña);
-      createUsuarioDto.contraseña = contraseñaHash;
+      const contraseñaHash = await this.passManager.encriptPaswoord(createUsuarioDto.contrasena);
+      createUsuarioDto.contrasena = contraseñaHash;
 
       // Subir foto si es archivo
       if (createUsuarioDto.foto && createUsuarioDto.foto instanceof Buffer) {
@@ -60,17 +59,17 @@ export class UserService {
       usuario.codigo = nuevoCodigo;
       await this.usuarioRepository.save(usuario);
 
-      const html = `
-        <h2>Hola ${usuario.nombre},</h2>
-        <p>Este es tu nuevo código de verificación:</p>
-        <h1 style="background:#f0f0f0;padding:10px;text-align:center">${nuevoCodigo}</h1>
-      `;
+      //const html = `
+       // <h2>Hola ${usuario.nombre},</h2>
+        //<p>Este es tu nuevo código de verificación:</p>
+        //<h1 style="background:#f0f0f0;padding:10px;text-align:center">${nuevoCodigo}</h1>
+      //`;
 
-      await this.emailService.sendEmail(
-        usuario.correo,
-        'Tu nuevo código de verificación',
-        html
-      );
+      //await this.emailService.sendEmail(
+       // usuario.correo,
+        //'Tu nuevo código de verificación',
+       // html
+     // );
 
       const usuarioGuardado = await this.usuarioRepository.save(usuario);
 
@@ -127,12 +126,12 @@ export class UserService {
     }
   }
 
-  async login(correo: string, contraseña: string) {
+  async login(correo: string, contrasena: string) {
     const user = await this.usuarioRepository.findOne({ where: { correo } });
     if (!user) {
       throw new HttpException('Credenciales inválidas', HttpStatus.UNAUTHORIZED);
     }
-    const valid = await this.passManager.verifyPassword(contraseña, user.contraseña);
+    const valid = await this.passManager.verifyPassword(contrasena, user.contrasena);
     if (!valid) {
       throw new HttpException('Credenciales inválidas', HttpStatus.UNAUTHORIZED);
     }
